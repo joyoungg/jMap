@@ -5,36 +5,269 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>간단한 지도 표시하기</title>
-    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=5yYUB6EfdbbaybOU43hY"></script>
-
-  <script src="https://www.gstatic.com/firebasejs/4.10.1/firebase.js"></script>
-  <script>
-    // Initialize Firebase
-    var config = {
-      apiKey: "AIzaSyAaUoTaS4FrzTcFwKEYzlY8SDxYmkUT3DA",
-      authDomain: "jmap-707fa.firebaseapp.com",
-      databaseURL: "https://jmap-707fa.firebaseio.com",
-      projectId: "jmap-707fa",
-      storageBucket: "jmap-707fa.appspot.com",
-      messagingSenderId: "723673745225"
-    };
-    firebase.initializeApp(config);
-  </script>
-</head>
-<body>
-<div id="map" style="width:100%;height:400px;"></div>
-
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=5yYUB6EfdbbaybOU43hY&submodules=panorama,geocoder"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.10.1/firebase.js"></script>
 <script>
-var mapOptions = {
-    center: new naver.maps.LatLng(37.3595704, 127.105399),
-    zoom: 10
-};
-
-var map = new naver.maps.Map('map', mapOptions);
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyAaUoTaS4FrzTcFwKEYzlY8SDxYmkUT3DA",
+        authDomain: "jmap-707fa.firebaseapp.com",
+        databaseURL: "https://jmap-707fa.firebaseio.com",
+        projectId: "jmap-707fa",
+        storageBucket: "jmap-707fa.appspot.com",
+        messagingSenderId: "723673745225"
+      };
+      firebase.initializeApp(config);
 </script>
 
+<script type="text/javascript">
 
-<!-- <div id="app"></div>
-<script src="/dist/build.js"></script> -->
+function initGeocoder() {
+  // 지도 화면 클릭하면 좌표출력
+    map.addListener('click', function(e) {
+        searchCoordinateToAddress(e.coord);
+    });
+
+// 주소입력 후 엔터 > 좌표 출력
+    $('#address').on('keydown', function(e) {
+        var keyCode = e.which;
+
+        if (keyCode === 13) { // Enter Key
+            searchAddressToCoordinate($('#address').val());
+        }
+    });
+// 버튼클릭하면 좌표.
+    $('#submit').on('click', function(e) {
+        e.preventDefault();
+        searchAddressToCoordinate($('#address').val());
+    });
+
+
+// 기본
+  navigator.geolocation.getCurrentPosition(function(position) {
+  onSuccessGeolocation(position);
+
+});
+
+$('#cur_position').on('click', function(e) {
+    e.preventDefault();
+    });
+}
+
+naver.maps.onJSContentLoaded = initGeocoder;
+</script>
+
+</head>
+
+<body>
+
+  <div class="search" style="position: relative;z-index: 1;">
+    <input id="cur_position "
+        type="button"
+        value="현재위치"
+        onClick="curLocation()">
+    <div id="out">
+    </div>
+  </div>
+
+<div id="map" style="width: 100%; height: 600px; position: relative; overflow: auto">
+  <!-- <div class="search" style=""> -->
+  <div class="search" style="position: relative;z-index: 1;">
+            <input id="address" type="text" placeholder="검색할 주소">
+            <input id="submit" type="button" value="주소 검색">
+            <input type="hidden" name="origin_lat">
+            <input type="hidden" name="origin_lon">
+  </div>
+
+</div>
+
+<script type="text/javascript">
+
+var thisLat
+var thisLon
+
+// map 띄우기
+var map = new naver.maps.Map('map', {
+    //center: new naver.maps.LatLng(37.5666805, 126.9784147),
+    zoom: 5,
+    mapTypeId: naver.maps.MapTypeId.NORMAL
+});
+
+
+var infowindow = new naver.maps.InfoWindow({
+        content: ''
+    });
+
+    function onSuccessGeolocation(position) {
+      //console.log("initSuGe")
+      infowindow.close();
+
+      var latitude = position.coords.latitude;
+      var longitude = position.coords.longitude;
+
+      //thisLat = latitude
+      //thisLon = longitude
+
+      var location = new naver.maps.LatLng(latitude,longitude);
+
+      //document.getElementsByName('origin_lat')[0].value = location.lat()
+      //document.getElementsByName('origin_lon')[0].value = location.lng()
+
+      var marker = new naver.maps.Marker({
+        position: new naver.maps.LatLng(latitude,longitude),
+        map: map
+    });
+
+    console.log(latitude)
+        map.setCenter(location); // 얻은 좌표를 지도의 중심으로 설정합니다.
+        map.setZoom(10); // 지도의 줌 레벨을 변경합니다.
+
+        infowindow.setContent('<div style="padding:20px;">' +
+            '<h4> 현재위치 </h4> </br>' +
+            'latitude: '+ location.lat() +'<br />' +
+            'longitude: '+ location.lng() +'</div>');
+
+        infowindow.open(map, location);
+    }
+
+    function onErrorGeolocation() {
+        var center = map.getCenter();
+
+        infowindow.setContent('<div style="padding:20px;">' +
+            '<h5 style="margin-bottom:5px;color:#f00;">Geolocation failed!</h5>'+ "latitude: "+ center.lat() +"<br />longitude: "+ center.lng() +'</div>');
+
+        infowindow.open(map, center);
+    }
+
+    $(window).on("load", function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(onSuccessGeolocation, onErrorGeolocation);
+        } else {
+            var center = map.getCenter();
+
+            infowindow.setContent('<div style="padding:20px;"><h5 style="margin-bottom:5px;color:#f00;">Geolocation not supported</h5>'+ "latitude: "+ center.lat() +"<br />longitude: "+ center.lng() +'</div>');
+            infowindow.open(map, center);
+        }
+    });
+
+
+map.setCursor('pointer');
+
+//search by tm128 coordinate
+function searchCoordinateToAddress(latlng) {
+    var tm128 = naver.maps.TransCoord.fromLatLngToTM128(latlng);
+
+    infowindow.close();
+
+    naver.maps.Service.reverseGeocode({
+        location: tm128,
+        coordType: naver.maps.Service.CoordType.TM128
+    }, function(status, response) {
+        if (status === naver.maps.Service.Status.ERROR) {
+            return alert('Something Wrong!');
+        }
+
+        var items = response.result.items,
+            htmlAddresses = [];
+
+        for (var i=0, ii=items.length, item, addrType; i<ii; i++) {
+            item = items[i];
+            addrType = item.isRoadAddress ? '[도로명 주소]' : '[지번 주소]';
+
+            htmlAddresses.push((i+1) +'. '+ addrType +' '+ item.address);
+            htmlAddresses.push('&nbsp&nbsp&nbsp -> '+ item.point.x +','+ item.point.y);
+        }
+
+        infowindow.setContent([
+                '<div style="padding:10px;min-width:200px;line-height:150%;">',
+                '<h4 style="margin-top:5px;">검색 좌표 : '+ response.result.userquery +'</h4><br />',
+                htmlAddresses.join('<br />'),
+                '</div>'
+            ].join('\n'));
+
+        infowindow.open(map, latlng);
+    });
+} //end searchCoordinateToAddress
+
+
+
+//result by latlng coordinate
+function searchAddressToCoordinate(address) {
+
+  infowindow.close();
+    naver.maps.Service.geocode({
+        address: address
+    }, function(status, response) {
+        if (status === naver.maps.Service.Status.ERROR) {
+            return alert('Something Wrong!');
+        }
+
+        var item = response.result.items[0],
+            addrType = item.isRoadAddress ? '[도로명 주소]' : '[지번 주소]',
+            point = new naver.maps.Point(item.point.x, item.point.y);
+
+        infowindow.setContent([
+                '<div style="padding:10px;min-width:200px;line-height:150%;">',
+                '<h4 style="margin-top:5px;">검색 주소 : '+ response.result.userquery +'</h4><br />',
+                addrType +' '+ item.address +'<br />',
+                '&nbsp&nbsp&nbsp -> '+ point.x +','+ point.y,
+                '</div>'
+            ].join('\n'));
+
+
+        map.setCenter(point);
+        infowindow.open(map, point);
+    });
+} // end searchAddressToCoordinate
+
+
+
+
+function curLocation() {
+  var output = document.getElementById("out");
+  console.log('init btn')
+  if (!navigator.geolocation){
+    output.innerHTML = "<p>사용자의 브라우저는 지오로케이션을 지원하지 않습니다.</p>";
+    return;
+  }
+
+  function success(position) {
+    var latitude  = position.coords.latitude;
+    var longitude = position.coords.longitude;
+    output.innerHTML = '<p>위도 : ' + latitude + '° <br>경도 : ' + longitude + '°</p>';
+
+var location = new naver.maps.LatLng(latitude,longitude);
+
+    infowindow.setContent('<div style="padding:20px;">' +
+        '<h4> 현재위치 </h4> </br>' +
+        'latitude: '+ latitude +'<br />' +
+        'longitude: '+ longitude +'</div>');
+
+    infowindow.open(map, location);
+
+    map.setCenter(location); // 얻은 좌표를 지도의 중심으로 설정합니다.
+    map.setZoom(10);
+
+
+  };
+
+  function error() {
+    output.innerHTML = "사용자의 위치를 찾을 수 없습니다.";
+  };
+
+  output.innerHTML = "<p>Locating…</p>";
+
+  navigator.geolocation.getCurrentPosition(success, error);
+
+} //end curLocation
+
+
+</script>
+// <!-- <div id="app"></div>
+// <script src="/dist/build.js"></script> -->
+
+
 </body>
 </html>
